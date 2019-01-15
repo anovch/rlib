@@ -32,7 +32,7 @@ void serial_test() {
 //	ProcessIo* prc = process_io_init(step, 1000, NULL, NULL);
 //	start_thread(prc);
 
-	SerialCB* port = open_serial(USART1,9600);
+	SerialCB* port = open_serial(USART1_,9600);
 	fflush(stdout);
 
 //	const char* string = "String testowy\n";

@@ -21,10 +21,12 @@ struct _SerialCB{
 };
 
 
-#define USART1 1
-#define USART2 2
-#define USART3 3
+#define USART1_ 0
+#define USART2_ 1
+#define USART3_ 2
+#define UART_AMOUNT 3
 
+void init_uart();
 SerialCB* open_serial(int usart, int baud_rate);
 void close_serial(SerialCB* cb);
 unsigned char write_serial(SerialCB* cb, const char* buff, int size);

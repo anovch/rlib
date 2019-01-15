@@ -33,6 +33,8 @@ static unsigned char esp8266_write(ProcessIo* io, const char* buff, size_t len) 
 
 void startup() {
 
+	init_uart();
+
 	sys_init_params();
 
 	sys_params_set_default("ap","UPC542C3E9");
@@ -46,7 +48,7 @@ void startup() {
 
 	// rs terminlalowy
 	term = terminal_init(executor);
-	usart1 = open_serial(USART1,9600);
+	usart1 = open_serial(USART1_,9600);
 	start_read_serial_term(usart1, term);
 
 
@@ -54,7 +56,7 @@ void startup() {
 	esp8266 = esp8266_init(executor);
 	esp8266_register_write(esp8266, esp8266_write);
 	ProcessIo* io = esp8266_get_io(esp8266);
-	usart2 = open_serial(USART2,115200);
+	usart2 = open_serial(USART2_,115200);
 	start_read_serial_io(usart2, io);
 	start_thread(io);
 
