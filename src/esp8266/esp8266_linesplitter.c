@@ -9,6 +9,8 @@
 #include "utils/utils.h"
 #include <stdlib.h>
 #include <string.h>
+#include "platform/mem.h"
+
 
 struct _InputEsp8266SplitterContext{
 	InputSplitterContext* linesplitter;
@@ -27,7 +29,7 @@ InputEsp8266SplitterContext* esp8266_line_splitter_init() {
 
 InputEsp8266SplitterContext* esp8266_line_splitter_init_size(int size){
 	InputEsp8266SplitterContext* result;
-	result = (InputEsp8266SplitterContext*)malloc(sizeof(InputEsp8266SplitterContext));
+	result = (InputEsp8266SplitterContext*)port_malloc(sizeof(InputEsp8266SplitterContext));
 	memset((void*)result,0,sizeof(InputEsp8266SplitterContext));
 	result->linesplitter = line_splitter_init_size(size);
 	result->ipd_comm = 0;
@@ -39,7 +41,7 @@ InputEsp8266SplitterContext* esp8266_line_splitter_init_size(int size){
 
 void esp8266_line_splitter_free(InputEsp8266SplitterContext* context){
 	line_splitter_free(context->linesplitter);
-	free(context);
+	port_free(context);
 }
 
 static unsigned char prefix(const char *pre, const char *str) {

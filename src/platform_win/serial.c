@@ -19,13 +19,13 @@ SerialCB* open_serial_(int usart, int baud_rate)
 {
 
   const char* portname = NULL;
-  if (usart == USART1) {
+  if (usart == USART1_) {
 
   }
-  if (usart == USART2) {
+  if (usart == USART2_) {
 	  portname = "\\\\.\\COM3";
   }
-  if (usart == USART3) {
+  if (usart == USART3_) {
 
   }
 
@@ -186,7 +186,7 @@ return Status;
 
 
 SerialCB* open_serial(int usart, int baud_rate) {
-	if (USART1 == usart) {
+	if (USART1_ == usart) {
 		return open_ssocket(usart, baud_rate);
 	}
 	else {
@@ -230,5 +230,9 @@ void start_read_serial_io(SerialCB* cb, ProcessIo* io){
 	else {
 		start_read_serial_io_(cb, io);
 	}
+
+}
+
+void init_uart() {
 
 }

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <terminal/line_splitter.h>
 #include <terminal/terminal.h>
+#include "platform/mem.h"
 
 
 typedef enum {
@@ -34,7 +35,7 @@ static unsigned char prefix(const char *pre, const char *str) {
 	return strncmp(pre, str, strlen(pre)) == 0;
 }
 
-#define MAXWIFISESS 4
+#define MAXWIFISESS 2
 typedef struct {
 	unsigned char connected;
 	TerminalContext* term;
@@ -43,6 +44,7 @@ typedef struct {
 	int send_bytes;
 } Esp8266Session;
 
+#define STATUS_LEN 64
 struct _Esp8266Context {
 	ProcessIo* io;
 	InputEsp8266SplitterContext* input;
@@ -52,8 +54,8 @@ struct _Esp8266Context {
 	Esp8266Session session[MAXWIFISESS];
 
 	// status
-	char ip[64];
-	char mac[64];
+	char ip[STATUS_LEN];
+	char mac[STATUS_LEN];
 	unsigned char wifi_connected;
 
 	int curr_sess_write;
@@ -290,6 +292,7 @@ void esp8266_stop(Esp8266Context* context) {
 	context->mode = EPS8266_STOP;
 }
 
+
 void esp8266_get_status(Esp8266Context* context, BufferOutput* result) {
 	char buff[64];
 	buffer_append_linef(result, buff,"ip : %s ", context->ip);
@@ -300,18 +303,20 @@ void esp8266_get_status(Esp8266Context* context, BufferOutput* result) {
 
 Esp8266Context* esp8266_init(LineParserContext* executor) {
 	Esp8266Context* result;
-	result = (Esp8266Context*) malloc(sizeof(Esp8266Context));
+	result = (Esp8266Context*) port_malloc(sizeof(Esp8266Context));
 	memset((void*) result, 0, sizeof(Esp8266Context));
 	result->io = process_io_init(step, 1000, read, NULL);
 	result->io->user_object = result;
 	result->input = esp8266_line_splitter_init(512);
 	result->mode = EPS8266_INIT;
+	memset(result->ip,0,STATUS_LEN);
+	memset(result->mac,0,STATUS_LEN);
 
 	for (int i=0;i<MAXWIFISESS;i++) {
 		result->session[i].connected = 0;
 		result->session[i].term = terminal_init(executor);
 		terminal_set_echo(result->session[i].term,0);
-		result->session[i].buffout = buffer_init(256);
+		result->session[i].buffout = buffer_init(512);
 	}
 	return result;
 
@@ -327,6 +332,6 @@ void esp8266_register_write(Esp8266Context* context, lp_write write) {
 
 void esp8266_free(Esp8266Context* context) {
 	process_io_free(context->io);
-	free(context);
+	port_free(context);
 }
 

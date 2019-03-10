@@ -12,5 +12,6 @@
 void startup();
 
 Esp8266Context*  get_wifi();
+unsigned char terminal_write(const char* buff, size_t len);
 
 #endif /* CORE_STARTUP_H_ */

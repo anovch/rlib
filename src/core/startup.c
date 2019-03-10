@@ -31,6 +31,13 @@ static unsigned char esp8266_write(ProcessIo* io, const char* buff, size_t len) 
 	return 0;
 }
 
+
+unsigned char terminal_write(const char* buff, size_t len) {
+	write_serial(usart1, buff, len);
+	return 0;
+}
+
+
 void startup() {
 
 	init_uart();

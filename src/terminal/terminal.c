@@ -8,6 +8,7 @@
 #include <string.h>
 #include <terminal/terminal.h>
 #include "terminal/line_splitter.h"
+#include "platform/mem.h"
 
 
 struct _TerminalContext{
@@ -20,7 +21,7 @@ struct _TerminalContext{
 
 TerminalContext* terminal_init(LineParserContext* executor) {
 	TerminalContext* result;
-	result = (TerminalContext*)malloc(sizeof(TerminalContext));
+	result = (TerminalContext*)port_malloc(sizeof(TerminalContext));
 	result->splitter = line_splitter_init();
 	result->executor = executor;
 	result->echo = 1;
@@ -34,7 +35,7 @@ void terminal_set_echo(TerminalContext* context, unsigned char echo) {
 
 void terminal_free(TerminalContext* context)  {
 	line_splitter_free(context->splitter);
-	free(context);
+	port_free(context);
 }
 
 

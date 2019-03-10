@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <terminal/line_splitter.h>
+#include "platform/mem.h"
 
 #define TERMINAL_BUFFER_CAPACITY 128
 #define TERMINAL_BUFFER_MAX_SEP 8
@@ -26,7 +27,7 @@ struct _InputSplitterContext{
 static int id_terminal=0;
 InputSplitterContext* line_splitter_init_size(int size) {
 	InputSplitterContext* result;
-	result = (InputSplitterContext*)malloc(sizeof(InputSplitterContext));
+	result = (InputSplitterContext*)port_malloc(sizeof(InputSplitterContext));
 	memset((void*)result,0,sizeof(InputSplitterContext));
 
 	result->id = id_terminal++;
@@ -35,7 +36,7 @@ InputSplitterContext* line_splitter_init_size(int size) {
 	result->f_overload=0;
 	result->lastchar=0;
 	line_splitter_set_separators(result, "\n\r");
-	result->input_buffer = (char*)malloc(result->input_buffer_capacite+2);
+	result->input_buffer = (char*)port_malloc(result->input_buffer_capacite+2);
 	return result;
 }
 
@@ -55,8 +56,8 @@ void line_splitter_set_separators(InputSplitterContext* context, const char* sep
 }
 
 void line_splitter_free(InputSplitterContext* context) {
-	free(context->input_buffer);
-	free(context);
+	port_free(context->input_buffer);
+	port_free(context);
 }
 
 void line_splitter_clear(InputSplitterContext* context) {

@@ -7,19 +7,21 @@
 #include "terminal/buffer.h"
 #include "terminal/line_splitter.h"
 #include "terminal/line_executor.h"
+#include "platform/pwm.h"
 #include "core/startup.h"
 #include "core/sys_params.h"
 #include <stdio.h>
 #include <string.h>
+#include "platform/mem.h"
 
 char* help[] = {
 	"---------Help--------------",
-	"help					- pomoc",
-	"params					- parametry systemowe",
-	"wifi [run/stop/info]			- run/stop/status wifi",
-	"set [ap/pass/port/wifion/wifioff]	- ustawienie parametrow",
-	"help3 - pomoc",
-	"help4 - pomoc",
+	"help                               - pomoc",
+	"params                             - parametry systemowe",
+	"wifi [run/stop/info]               - run/stop/status wifi",
+	"set [ap/pass/port/wifion/wifioff]  - ustawienie parametrow",
+	"pwm channel val                    - ustawienie pwm ",
+	"log on/off                         - log on off",
 	"END.",
 	0
 };
@@ -37,11 +39,17 @@ static unsigned char callback_help(int argc, char** argv, BufferOutput* result) 
 }
 
 static const char* get_par(char* buff, char* name, char* value) {
-	sprintf(buff,"%s : %s",name, value);
+	if (value == NULL) {
+		sprintf(buff,"%s : --- ",name);
+	}
+	else {
+		sprintf(buff,"%s : %s",name, value);
+	}
 	return buff;
 }
+static char output[128];
+
 static unsigned char callback_params(int argc, char** argv, BufferOutput* result) {
-	char output[128];
 	buffer_append_line(result, "---------Parameters--------------");
 	buffer_append_line(result, get_par(output,"AP",sys_params_get("ap")));
 	buffer_append_line(result, get_par(output,"PASS",sys_params_get("pass")));
@@ -98,10 +106,22 @@ static unsigned char callback_set(int argc, char** argv, BufferOutput* result) {
 	return 1;
 }
 
+static unsigned char callback_wpm(int argc, char** argv, BufferOutput* result) {
+	if (argc == 2) {
+		unsigned int channel = atoi(argv[0]); // channel
+		unsigned int value = atoi(argv[1]); // value
+		set_pwm(channel,value);
+	}
+	buffer_append_line(result, "END.");
+	return 1;
+
+}
+
 void commands_register(LineParserContext* executor) {
 	line_exec_register(executor,"help",callback_help);
 	line_exec_register(executor,"params",callback_params);
 	line_exec_register(executor,"wifi",callback_wifi);
 	line_exec_register(executor,"set",callback_set);
+	line_exec_register(executor,"pwm",callback_wpm);
 
 }

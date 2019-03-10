@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <utils/process_io.h>
+#include "platform/mem.h"
 
 
 ProcessIo* process_io_init(lp_step step, int sleep_ms, lp_read read, lp_write write) {
 	ProcessIo* result;
-	result = (ProcessIo*)malloc(sizeof(ProcessIo));
+	result = (ProcessIo*)port_malloc(sizeof(ProcessIo));
 	memset((void*)result,0,sizeof(ProcessIo));
 	result->step = step;
 	result->read = read;
@@ -22,5 +23,5 @@ ProcessIo* process_io_init(lp_step step, int sleep_ms, lp_read read, lp_write wr
 }
 
 void process_io_free(ProcessIo* process) {
-	free(process);
+	port_free(process);
 }

@@ -8,6 +8,7 @@
 #include "utils/params.h"
 #include "platform/storage.h"
 #include <stdlib.h>
+#include "platform/mem.h"
 
 static Params* par;
 
@@ -16,7 +17,7 @@ void sys_init_params() {
 
 	const char* tmp = load(0);
 	params_set_all(par,tmp);
-	free((void*)tmp);
+	port_free((void*)tmp);
 
 
 }
@@ -24,7 +25,7 @@ void sys_init_params() {
 void sys_store_params() {
 	const char* tmp = params_get_all(par);
 	store(0,tmp);
-	free((void*)tmp);
+	port_free((void*)tmp);
 }
 
 void sys_params_set(const char* key, const char* value) {

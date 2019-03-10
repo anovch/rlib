@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "platform/mem.h"
 
 struct _BufferOutput{
 	char* buff;
@@ -21,14 +22,14 @@ struct _BufferOutput{
 
 BufferOutput* buffer_init(int size) {
 	BufferOutput* result;
-	result = (BufferOutput*)malloc(sizeof(BufferOutput));
+	result = (BufferOutput*)port_malloc(sizeof(BufferOutput));
 	result->size = 0;
 	result->capacity = size;
 	result->overload = 0;
 	result->nl[0] = '\r';
 	result->nl[1] = '\n';
 	result->nl[2] = 0;
-	result->buff = (char*)malloc(result->capacity);
+	result->buff = (char*)port_malloc(result->capacity);
 	buffer_clear(result);
 	return result;
 
@@ -50,6 +51,9 @@ size_t buffer_size(BufferOutput* context) {
 
 
 void buffer_append_str(BufferOutput* context, const char* buff) {
+	if (buff==0) {
+		return;
+	}
 	size_t newsize = context->size + strlen(buff);
 	if ((context->size + strlen(buff)) >= context->capacity) {
 		context->overload = 1;
@@ -87,14 +91,14 @@ void buffer_append(BufferOutput* context, const char* buff, int size) {
 
 
 void buffer_free(BufferOutput* context) {
-	free(context->buff);
-	free(context);
+	port_free(context->buff);
+	port_free(context);
 }
 
 void test_malloc() {
-	char* test = malloc(10);
+	char* test = port_malloc(10);
 	test[0] = 0;
-	free(test);
+	port_free(test);
 }
 
 

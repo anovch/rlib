@@ -3,11 +3,14 @@
 #include "stm32f1xx.h"
 #include <stdlib.h>
 #include <string.h>
+#include "platform/mem.h"
+
 
 #define USART_IRQ_PRIORITY 6
 
 typedef struct {
-    uint8_t sndbuff[48];
+    //uint8_t sndbuff[48];
+	UART_HandleTypeDef* huart;
     uint8_t bitmask;
     USART_TypeDef* USART;
     osSemaphoreId sem;
@@ -69,23 +72,56 @@ osThreadDef(TaskUSART2, StartTaskUSART2, osPriorityNormal, 0, 128);
 
 void StartTaskUSART1Rec(void const * argument);
 osThreadId TaskUSART1RecHandle;
-osThreadDef(TaskUSART1Rec, StartTaskUSART1Rec, osPriorityNormal, 0, 128);
+osThreadDef(TaskUSART1Rec, StartTaskUSART1Rec, osPriorityNormal, 0, 512);
 
 void StartTaskUSART2Rec(void const * argument);
 osThreadId TaskUSART2RecHandle;
-osThreadDef(TaskUSART2Rec, StartTaskUSART2Rec, osPriorityNormal, 0, 128);
+osThreadDef(TaskUSART2Rec, StartTaskUSART2Rec, osPriorityNormal, 0, 512);
 
-void StartTaskUSART(UsartItem* uart) {
+void StartTaskUSART_(UsartItem* uart) {
     osEvent evt;
     for (;;) {
         evt = osMessageGet(uart->qtransmit, osWaitForever);
         uart->send_bytes++;
         uart->weakup_tx = 1;
         uart->USART->DR = evt.value.v;
-        uart->USART->CR1 |= USART_CR1_TCIE;
+        //uart->USART->CR1 |= USART_CR1_TCIE;
+        uart->USART->CR1 |= USART_CR1_TXEIE;
         osSemaphoreWait(uart->sem, osWaitForever);
     }
 }
+
+#define LOCALBUFSIZE 8
+void StartTaskUSART(UsartItem* uart) {
+	unsigned char buffer[LOCALBUFSIZE];
+	int size;
+    osEvent evt;
+    for (;;) {
+        evt = osMessageGet(uart->qtransmit, osWaitForever);
+        buffer[0] = evt.value.v;
+        size = 1;
+        while(1) {
+        	if (osMessageWaiting(uart->qtransmit)!=0) {
+        		evt = osMessageGet(uart->qtransmit, osWaitForever);
+        		buffer[size] = evt.value.v;
+        		size++;
+        	}
+        	else {
+        		break;
+        	}
+        	if (size >= LOCALBUFSIZE){
+        		break;
+        	}
+        }
+
+        while(HAL_UART_Transmit_IT(uart->huart, buffer, size) == HAL_BUSY) {
+        	taskYIELD();
+        }
+    }
+}
+
+
+
 
 void StartTaskUSART1(void const * argument) {
     StartTaskUSART(&usats[USART1_]);
@@ -98,13 +134,13 @@ void StartTaskUSART2(void const * argument) {
 
 
 
-void StartTaskRec(UsartItem* uart) {
+void StartTaskRec_(UsartItem* uart) {
     osEvent evt;
     char TempChar;
 
     if (uart->cb->term!=NULL) {
 
-    	BufferOutput* buffout = buffer_init(256);
+    	BufferOutput* buffout = buffer_init(1024);
     	terminal_get_header(uart->cb->term, buffout);
     	write_serial(uart->cb, buffer_get(buffout),strlen(buffer_get(buffout)));
     	for (;;) {
@@ -125,18 +161,56 @@ void StartTaskRec(UsartItem* uart) {
     	for (;;) {
             evt = osMessageGet(uart->qreceive, osWaitForever);  //Wysylka z uart 1
             if (evt.status == osEventMessage) {
+            	TempChar = evt.value.v;
             	uart->cb->io->read(uart->cb->io,&TempChar,sizeof(TempChar));
             }
     	}
     }
 }
 
+void StartTaskRec(UsartItem* uart) {
+
+    unsigned char TempChar;
+
+    if (uart->cb->term!=NULL) {
+
+    	BufferOutput* buffout = buffer_init(1024);
+    	terminal_get_header(uart->cb->term, buffout);
+    	write_serial(uart->cb, buffer_get(buffout),strlen(buffer_get(buffout)));
+    	for (;;) {
+    		if (HAL_UART_Receive_IT(uart->huart, &TempChar, 1)==HAL_OK) {
+    			terminal_input(uart->cb->term, (char*)&TempChar, 1, buffout);
+    			int size = buffer_size(buffout);
+    			if (size!=0) {
+    				write_serial(uart->cb, buffer_get(buffout),size);
+    			}
+    		}
+    		else {
+    			taskYIELD();
+    		}
+    	}
+    }
+
+    if (uart->cb->io!=NULL) {
+    	for (;;) {
+    		if (HAL_UART_Receive_IT(uart->huart, &TempChar, 1)==HAL_OK) {
+            	uart->cb->io->read(uart->cb->io,(char*)&TempChar,1);
+            } else {
+            	taskYIELD();
+            }
+    	}
+    }
+}
+
 void StartTaskUSART1Rec(void const * argument) {
-	StartTaskRec(&usats[USART1_]);
+	StartTaskRec_(&usats[USART1_]);
 }
 void StartTaskUSART2Rec(void const * argument) {
-	StartTaskRec(&usats[USART2_]);
+	StartTaskRec_(&usats[USART2_]);
 }
+
+extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 
 
 void init_uart() {
@@ -151,6 +225,7 @@ void init_uart() {
 
 
     usats[USART1_].USART = USART1;
+    usats[USART1_].huart = &huart1;
     usats[USART1_].qreceive = xQueueUART1recHandle;
     usats[USART1_].qtransmit = xQueueUART1transHandle;
     usats[USART1_].sem = UART1EmptyQueue;
@@ -169,6 +244,7 @@ void init_uart() {
     usats[USART1_].weakup_tx = 0;
 
     usats[USART2_].USART = USART2;
+    usats[USART2_].huart = &huart2;
     usats[USART2_].qreceive = xQueueUART2recHandle;
     usats[USART2_].qtransmit = xQueueUART2transHandle;
     usats[USART2_].sem = UART2EmptyQueue;
@@ -224,7 +300,7 @@ osStatus osMessagePut_wrap(UsartItem* uart, osMessageQId queue_id, uint32_t info
 
 
 
-static void USART_IRQHandler(UsartItem* uart) {
+static void USART_IRQHandler_(UsartItem* uart) {
 
     uint8_t temp = 0;
     volatile osEvent evt;
@@ -234,7 +310,7 @@ static void USART_IRQHandler(UsartItem* uart) {
         osMessagePut_wrap(uart, uart->qreceive, temp, 0);
     }
 
-    if (uart->USART->SR & USART_SR_TC) {
+    if (uart->USART->SR & USART_SR_TXE) {
         evt = osMessageGet(uart->qtransmit, 0);
         uart->qtransmit_size = osMessageWaiting(uart->qtransmit);
         if (evt.status == osEventMessage) {
@@ -246,7 +322,8 @@ static void USART_IRQHandler(UsartItem* uart) {
         	if (uart->weakup_tx) {
         		uart->weakup_tx = 0;
         		osSemaphoreRelease(uart->sem);
-        		uart->USART->CR1 &= ~USART_CR1_TCIE;
+        		//uart->USART->CR1 &= ~USART_CR1_TCIE;
+        		uart->USART->CR1 &= ~ USART_CR1_TXEIE;
         	}
         }
 
@@ -254,19 +331,36 @@ static void USART_IRQHandler(UsartItem* uart) {
 
 }
 
+static void USART_IRQHandler(UsartItem* uart) {
+
+    uint8_t temp = 0;
+    if (uart->USART->SR & USART_SR_RXNE) {
+        temp = (uint8_t) (uart->USART->DR & uart->bitmask);
+        uart->rec_bytes++;
+        osMessagePut_wrap(uart, uart->qreceive, temp, 0);
+    }
+    if (uart->USART->SR & USART_SR_ORE) {
+        temp = (uint8_t) (uart->USART->DR & uart->bitmask);
+        uart->rs_ore++;
+    }
+}
+
 void USART1_IRQHandler(void) {
     USART_IRQHandler(&usats[USART1_]);
+    HAL_UART_IRQHandler(usats[USART1_].huart);
 }
 
 void USART2_IRQHandler(void) {
     USART_IRQHandler(&usats[USART2_]);
+    HAL_UART_IRQHandler(usats[USART2_].huart);
+
 }
 
 
 
 SerialCB* open_serial(int usart, int baud_rate) {
 	SerialCB* result;
-	result = (SerialCB*)malloc(sizeof(SerialCB));
+	result = (SerialCB*)port_malloc(sizeof(SerialCB));
 	usats[usart].cb = result;
 	result->usr = &usats[usart];
 	return result;
@@ -298,7 +392,7 @@ static void start_usart_read_thread(SerialCB* cb) {
 
 void start_read_serial_term(SerialCB* cb, TerminalContext* term) {
 	cb->term = term;
-	terminal_set_echo(term, 0);
+	//terminal_set_echo(term, 0);
 	cb->io = NULL;
 	start_usart_read_thread(cb);
 }

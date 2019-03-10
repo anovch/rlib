@@ -10,9 +10,10 @@
 #include <string.h>
 #include <terminal/line_executor.h>
 #include <utils/utils.h>
+#include "platform/mem.h"
 
 #define LINE_PARSER_NAME_SIZE 64
-#define LINE_PARSER_CAP 64
+#define LINE_PARSER_CAP 8
 
 
 typedef struct {
@@ -36,7 +37,7 @@ static unsigned char callback_info(int argc, char** argv, BufferOutput* result) 
 
 LineParserContext* line_exec_init() {
 	LineParserContext* result;
-	result = (LineParserContext*)malloc(sizeof(LineParserContext));
+	result = (LineParserContext*)port_malloc(sizeof(LineParserContext));
 	memset((void*)result,0,sizeof(LineParserContext));
 	line_exec_register(result,"info",callback_info);
 
@@ -44,7 +45,7 @@ LineParserContext* line_exec_init() {
 }
 
 void line_exec_free(LineParserContext* context) {
-	free(context);
+	port_free(context);
 }
 
 

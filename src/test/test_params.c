@@ -9,6 +9,7 @@
 #include <string.h>
 #include <utils/params.h>
 #include "platform/storage.h"
+#include "platform/mem.h"
 
 const char* dificult_string = "new value \nwith new line and spetial char @#$%^";
 const char* all_dificult_string = "key1=new value \nwith new line and spetial char @#$%^|key2=val2|";
@@ -39,7 +40,7 @@ void test_params() {
 	if (strcmp(tmp,all_dificult_string)!=0) {
 		pass = 0;
 	}
-	free(tmp);
+	port_free(tmp);
 
 	// dodajemy jescze parametr
 	params_set(par,"key3","val3");
@@ -47,12 +48,12 @@ void test_params() {
 	tmp = params_get_all(par);
 	// zapisujemy do pliku
 	store(0,tmp);
-	free(tmp);
+	port_free(tmp);
 
 	tmp = load(0);
 	// odczytujemy pliku
 	params_set_all(par,tmp);
-	free(tmp);
+	port_free(tmp);
 
 	// sprawdzamy
 	if (strcmp(params_get(par, "key1"),dificult_string)!=0) {

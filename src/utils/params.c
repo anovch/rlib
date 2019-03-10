@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <utils/params.h>
+#include "platform/mem.h"
 
 #define PARAMS_MAX_SIZE_KEY 16
 #define PARAMS_MAX_SIZE_VALUE 256
@@ -24,7 +25,7 @@ struct _Params{
 
 Params* params_init() {
 	Params* result;
-	result = (Params*)malloc(sizeof(Params));
+	result = (Params*)port_malloc(sizeof(Params));
 	result->first = NULL;
 	result->last = NULL;
 	return result;
@@ -35,9 +36,9 @@ static void params_clear(Params* par) {
 	ParamsPair* next;
 	while(tmp!=NULL) {
 		next = tmp->next;
-		free(tmp->key);
-		free(tmp->value);
-		free(tmp);
+		port_free(tmp->key);
+		port_free(tmp->value);
+		port_free(tmp);
 		tmp = next;
 	}
 	par->first = NULL;
@@ -84,7 +85,7 @@ char* params_get_all(Params* par) {
 	size_t size = _params_calculate_size(par, &items);
 	size_t alloc_size = size + (items*2) + 1;
 
-	result = malloc(alloc_size);
+	result = port_malloc(alloc_size);
 	result[0] = 0;
 	result[alloc_size-1] = 0;
 
@@ -150,17 +151,17 @@ ParamsPair* params_get_next(Params* par, ParamsPair* curr) {
 void params_set(Params* par, const char* key, const char* value) {
 	ParamsPair* tmp = _params_get(par, key);
 	if(tmp!=NULL) {
-		free(tmp->value);
-		tmp->value = malloc(strlen(value)+1);
+		port_free(tmp->value);
+		tmp->value = port_malloc(strlen(value)+1);
 		strcpy(tmp->value, value);
 		return;
 	}
 
 
-	tmp = (ParamsPair*)malloc(sizeof(ParamsPair));
-	tmp->key = malloc(strlen(key)+1);
+	tmp = (ParamsPair*)port_malloc(sizeof(ParamsPair));
+	tmp->key = port_malloc(strlen(key)+1);
 	strcpy(tmp->key, key);
-	tmp->value = malloc(strlen(value)+1);
+	tmp->value = port_malloc(strlen(value)+1);
 	strcpy(tmp->value, value);
 	tmp->next = NULL;
 
@@ -177,5 +178,5 @@ void params_set(Params* par, const char* key, const char* value) {
 
 void params_free(Params* par) {
 	params_clear(par);
-	free(par);
+	port_free(par);
 }

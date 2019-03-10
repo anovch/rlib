@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "utils/utils.h"
+#include "platform/mem.h"
 
 #define MAX_ITEMS_IN_SPLITTER 16
 struct _Splitter{
@@ -55,12 +56,12 @@ static char* get_next_tok(char* buff,  char* end) {
 Splitter* splitter_init(const char* src, const char* separators) {
 
 	Splitter* result;
-	result = (Splitter*)malloc(sizeof(Splitter));
+	result = (Splitter*)port_malloc(sizeof(Splitter));
 	memset((void*)result,0,sizeof(Splitter));
 
 
 	int size = strlen(src);
-	result->buff_ = malloc(size+1);
+	result->buff_ = (char*)port_malloc(size+1);
 	result->buff_[size] = 0;
 	memcpy(result->buff_,src,size);
 
@@ -103,7 +104,7 @@ int splitter_get_amount_items(Splitter* splt) {
 }
 
 void  splitter_free(Splitter* splt) {
-	free(splt->buff_);
-	free(splt);
+	port_free(splt->buff_);
+	port_free(splt);
 }
 

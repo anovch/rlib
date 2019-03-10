@@ -6,6 +6,7 @@
  */
 #include <windows.h>
 #include "utils/process_io.h"
+#include "platform/mem.h"
 
 
 DWORD WINAPI ThreadFunc(void* data) {
@@ -37,3 +38,18 @@ void inf_loop() {
   }
 
 }
+
+
+void *port_malloc( size_t xWantedSize ) {
+	return malloc(xWantedSize);
+}
+
+void port_free(void *pv ) {
+	free(pv);
+}
+
+
+void set_pwm(int channel, unsigned int value) {
+
+}
+
