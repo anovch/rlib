@@ -15,9 +15,13 @@
 
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
-static char buffer[32];
 
-static void logger_(LOGGER_LEVEL level, const char *format, ...){
+char buffer[32];
+volatile unsigned char logger_active = 0;
+void logger(LOGGER_LEVEL level, const char *format, ...){
+	if (!logger_active) {
+		return;
+	}
 	memset(buffer,0,32);
 	va_list args;
 	va_start(args, format);
@@ -27,7 +31,11 @@ static void logger_(LOGGER_LEVEL level, const char *format, ...){
 	va_end(args);
 }
 
-void logger(LOGGER_LEVEL level, const char *format, ...){
+void logger_(LOGGER_LEVEL level, const char *format, ...){
+}
+
+void set_logger(unsigned char on) {
+	logger_active = on;
 }
 
 static void ProcessTask(void const * argument)

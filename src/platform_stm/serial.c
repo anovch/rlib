@@ -7,9 +7,10 @@
 
 
 #define USART_IRQ_PRIORITY 6
+#define LOCALBUFSIZE 16
 
 typedef struct {
-    //uint8_t sndbuff[48];
+    uint8_t sndbuff[LOCALBUFSIZE];
 	UART_HandleTypeDef* huart;
     uint8_t bitmask;
     USART_TypeDef* USART;
@@ -37,7 +38,7 @@ typedef struct {
 
 UsartItem usats[UART_AMOUNT];
 
-#define MAX_QUEUE_SIZE_UART 64
+#define MAX_QUEUE_SIZE_UART 256
 
 osStatus osMessagePut_wrap(UsartItem* uart, osMessageQId queue_id, uint32_t info, uint32_t millisec);
 
@@ -64,19 +65,19 @@ osSemaphoreDef(UART2EmptyQueue_def);
 // watki
 void StartTaskUSART1(void const * argument);
 osThreadId TaskUSART1Handle;
-osThreadDef(TaskUSART1, StartTaskUSART1, osPriorityNormal, 0, 128);
+osThreadDef(TaskUSART1, StartTaskUSART1, osPriorityNormal, 0, 256);
 
 void StartTaskUSART2(void const * argument);
 osThreadId TaskUSART2Handle;
-osThreadDef(TaskUSART2, StartTaskUSART2, osPriorityNormal, 0, 128);
+osThreadDef(TaskUSART2, StartTaskUSART2, osPriorityNormal, 0, 256);
 
 void StartTaskUSART1Rec(void const * argument);
 osThreadId TaskUSART1RecHandle;
-osThreadDef(TaskUSART1Rec, StartTaskUSART1Rec, osPriorityNormal, 0, 512);
+osThreadDef(TaskUSART1Rec, StartTaskUSART1Rec, osPriorityNormal, 0, 256);
 
 void StartTaskUSART2Rec(void const * argument);
 osThreadId TaskUSART2RecHandle;
-osThreadDef(TaskUSART2Rec, StartTaskUSART2Rec, osPriorityNormal, 0, 512);
+osThreadDef(TaskUSART2Rec, StartTaskUSART2Rec, osPriorityNormal, 0, 256);
 
 void StartTaskUSART_(UsartItem* uart) {
     osEvent evt;
@@ -91,19 +92,18 @@ void StartTaskUSART_(UsartItem* uart) {
     }
 }
 
-#define LOCALBUFSIZE 8
 void StartTaskUSART(UsartItem* uart) {
-	unsigned char buffer[LOCALBUFSIZE];
+	//unsigned char buffer[LOCALBUFSIZE];
 	int size;
     osEvent evt;
     for (;;) {
         evt = osMessageGet(uart->qtransmit, osWaitForever);
-        buffer[0] = evt.value.v;
+        uart->sndbuff[0] = evt.value.v;
         size = 1;
         while(1) {
         	if (osMessageWaiting(uart->qtransmit)!=0) {
         		evt = osMessageGet(uart->qtransmit, osWaitForever);
-        		buffer[size] = evt.value.v;
+        		uart->sndbuff[size] = evt.value.v;
         		size++;
         	}
         	else {
@@ -113,10 +113,14 @@ void StartTaskUSART(UsartItem* uart) {
         		break;
         	}
         }
-
-        while(HAL_UART_Transmit_IT(uart->huart, buffer, size) == HAL_BUSY) {
+        while(HAL_UART_Transmit_IT(uart->huart, uart->sndbuff, size) == HAL_BUSY) {
         	taskYIELD();
         }
+        while (!(uart->USART->SR & USART_SR_TXE)) {
+        	taskYIELD();
+        }
+
+        //HAL_Delay(1000);
     }
 }
 
@@ -373,7 +377,7 @@ void close_serial(SerialCB* cb) {
 unsigned char write_serial(SerialCB* cb, const char* buff, int size) {
 	UsartItem* uart = (UsartItem*)cb->usr;
 	for(int i=0;i<size;i++) {
-		osMessagePut_wrap(uart, uart->qtransmit, buff[i], 0);
+		osMessagePut_wrap(uart, uart->qtransmit, buff[i], 1000);
 	}
 
 	return 1;

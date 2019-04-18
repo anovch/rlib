@@ -13,7 +13,7 @@
 #include "platform/mem.h"
 
 #define LINE_PARSER_NAME_SIZE 64
-#define LINE_PARSER_CAP 8
+#define LINE_PARSER_CAP 16
 
 
 typedef struct {

@@ -12,5 +12,5 @@
 #define PWM_CH2 1
 
 void set_pwm(int channel, unsigned int value);
-
+void set_dir(int channel, unsigned int value);
 #endif /* INCLUDE_PLATFORM_PWM_H_ */

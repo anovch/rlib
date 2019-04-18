@@ -16,7 +16,7 @@
 #include <terminal/line_splitter.h>
 #include <terminal/terminal.h>
 #include "platform/mem.h"
-
+#include "core/sys_params.h"
 
 typedef enum {
 	EPS8266_INIT,
@@ -57,6 +57,7 @@ struct _Esp8266Context {
 	char ip[STATUS_LEN];
 	char mac[STATUS_LEN];
 	unsigned char wifi_connected;
+	char buffer[COM_MAX_LEN];
 
 	int curr_sess_write;
 };
@@ -218,14 +219,16 @@ static void responce(ProcessIo* io, char* line) {
 			c->mode = EPS8266_INIT_WIFI;
 			break;
 		case AT_CWMODE:
-			run_command(io, "AT+CWJAP_CUR=\"UPC542C3E9\",\"B4njeawec3md\"",
-					AT_CWJAP_CUR);
+			//"AT+CWJAP_CUR=\"UPC542C3E9\",\"B4njeawec3md\""
+			sprintf(c->buffer,"AT+CWJAP_CUR=\"%s\",\"%s\"",sys_params_get("ap"),sys_params_get("pass"));
+			run_command(io, c->buffer,AT_CWJAP_CUR);
 			break;
 		case AT_CWJAP_CUR:
 			run_command(io, "AT+CIPMUX=1", AT_CIPMUX);
 			break;
 		case AT_CIPMUX:
-			run_command(io, "AT+CIPSERVER=1,3333", AT_CIPSERVER);
+			sprintf(c->buffer,"AT+CIPSERVER=1,%s",sys_params_get("tcpport"));
+			run_command(io, c->buffer, AT_CIPSERVER);
 			break;
 		case AT_CIPSERVER:
 			run_command(io, "AT+CIFSR", AT_CIFSR);

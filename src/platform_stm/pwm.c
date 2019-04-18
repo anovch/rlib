@@ -46,3 +46,18 @@ void set_pwm(int channel, unsigned int value) {
 	}
 
 }
+
+void set_dir(int channel, unsigned int value) {
+	GPIO_TypeDef* port = DIR1_GPIO_Port;
+	uint16_t pin = DIR1_Pin;
+	if (channel != 0) {
+		port = DIR2_GPIO_Port;
+		pin = DIR2_Pin;
+	}
+	if (value == 0) {
+		HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+	}
+	else {
+		HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+	}
+}

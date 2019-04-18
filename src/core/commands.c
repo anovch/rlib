@@ -16,12 +16,14 @@
 
 char* help[] = {
 	"---------Help--------------",
-	"help                               - pomoc",
-	"params                             - parametry systemowe",
-	"wifi [run/stop/info]               - run/stop/status wifi",
-	"set [ap/pass/port/wifion/wifioff]  - ustawienie parametrow",
-	"pwm channel val                    - ustawienie pwm ",
-	"log on/off                         - log on off",
+	"help                               - help",
+	"params                             - system parameters",
+	"wifi [run/stop/info]               - run/stop/state wifi",
+	"set [ap/pass/port/wifion/wifioff]  - set parameters",
+	"pwm channel val                    - set pwm ",
+	"log 0/1                            - log on off",
+	"dir channel val                    - set direction",
+	"run val1 dir1 val2 dir2            - run",
 	"END.",
 	0
 };
@@ -117,11 +119,53 @@ static unsigned char callback_wpm(int argc, char** argv, BufferOutput* result) {
 
 }
 
+static unsigned char callback_log(int argc, char** argv, BufferOutput* result) {
+	if (argc == 1) {
+		unsigned int on = atoi(argv[0]); //
+		set_logger(on);
+	}
+	buffer_append_line(result, "END.");
+	return 1;
+
+}
+
+static unsigned char callback_dir(int argc, char** argv, BufferOutput* result) {
+	if (argc == 2) {
+		unsigned int channel = atoi(argv[0]); // channel
+		unsigned int value = atoi(argv[1]); // value
+		set_dir(channel,value);
+
+	}
+	buffer_append_line(result, "END.");
+	return 1;
+
+}
+
+static unsigned char callback_run(int argc, char** argv, BufferOutput* result) {
+	if (argc == 4) {
+		unsigned int val1 = atoi(argv[0]); // val1
+		unsigned int dir1 = atoi(argv[1]); // dir1
+		unsigned int val2 = atoi(argv[2]); // val2
+		unsigned int dir2 = atoi(argv[3]); // dir2
+		set_pwm(0,val1);
+		set_dir(0,dir1);
+		set_pwm(1,val2);
+		set_dir(1,dir2);
+
+	}
+	buffer_append_line(result, "END.");
+	return 1;
+
+}
+
 void commands_register(LineParserContext* executor) {
 	line_exec_register(executor,"help",callback_help);
 	line_exec_register(executor,"params",callback_params);
 	line_exec_register(executor,"wifi",callback_wifi);
 	line_exec_register(executor,"set",callback_set);
 	line_exec_register(executor,"pwm",callback_wpm);
+	line_exec_register(executor,"log",callback_log);
+	line_exec_register(executor,"dir",callback_dir);
+	line_exec_register(executor,"run",callback_run);
 
 }

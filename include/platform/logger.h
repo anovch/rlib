@@ -14,6 +14,7 @@ typedef enum {
 } LOGGER_LEVEL;
 
 void logger(LOGGER_LEVEL level, const char *format, ...);
+void set_logger(unsigned char on);
 
 
 #endif /* PLATFORM_LOGGER_H_ */
